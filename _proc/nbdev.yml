@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "pikaQ"
+  site-url: "https://feynlee.github.io/pikaQ"
+  description: "Programmatically generate SQL queries for different database platforms."
+  repo-branch: master
+  repo-url: "https://github.com/feynlee/pikaQ"

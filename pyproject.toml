@@ -1,0 +1,39 @@
+[project]
+name = "pikaQ"
+version = "0.0.1"
+description = "Programmatically generate SQL queries for different database platforms."
+authors = [
+    {name = "Ziyue Li", email = "liziyue241@gmail.com"},
+]
+dependencies = [
+    "fastcore>=1.5.27",
+    "nbdev>=2.3.9",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "Apache Software License 2.0"}
+keywords = ["nbdev jupyter notebook python"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.10",
+]
+[project.urls]
+Homepage = "https://github.com/feynlee/pikaQ"
+[project.optional-dependencies]
+dev = []
+[project.scripts]
+[project.entry-points.nbdev]
+pikaQ = "pikaQ._modidx:d"
+
+[tool.pdm]
+[tool.pdm.dev-dependencies]
+dev = [
+    "nbdev>=2.2.8",
+]
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
