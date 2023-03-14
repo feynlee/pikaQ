@@ -1,3 +1,5 @@
+[tool.pdm]
+
 [project]
 name = "pikaQ"
 version = "0.0.1"
@@ -6,33 +8,33 @@ authors = [
     {name = "Ziyue Li", email = "liziyue241@gmail.com"},
 ]
 dependencies = [
-    "fastcore>=1.5.27",
-    "nbdev>=2.3.9",
+    "fastcore>=1.5.28",
 ]
-requires-python = ">=3.10"
-readme = "README.md"
+requires-python = ">=3.7"
 license = {text = "Apache Software License 2.0"}
 keywords = ["nbdev jupyter notebook python"]
+readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
 ]
 [project.urls]
 Homepage = "https://github.com/feynlee/pikaQ"
 [project.optional-dependencies]
-dev = []
+dev = [
+    "ipykernel>=6.16.2",
+    "nbdev>=2.3.12",
+    "notebook>=6.5.2",
+]
 [project.scripts]
 [project.entry-points.nbdev]
 pikaQ = "pikaQ._modidx:d"
-
-[tool.pdm]
-[tool.pdm.dev-dependencies]
-dev = [
-    "nbdev>=2.2.8",
-]
 
 [build-system]
 requires = ["pdm-pep517>=1.0.0"]
