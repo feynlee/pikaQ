@@ -1,7 +1,0 @@
-website:
-  sidebar:
-    contents:
-      - index.ipynb
-      - 00_utils.ipynb
-      - 01_core.ipynb
-      - 03_terms.ipynb

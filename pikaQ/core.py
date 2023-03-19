@@ -16,7 +16,7 @@ from typing import Union
 try: from types import UnionType
 except ImportError: UnionType = None
 
-# %% ../nbs/01_core.ipynb 4
+# %% ../nbs/01_core.ipynb 5
 def quote_symbol(quote):
     """generate quote symbol to use for tables and columns"""
     if type(quote) == str:
@@ -41,7 +41,7 @@ def exec(obj, **kwargs):
     else:
         return str(obj)
 
-# %% ../nbs/01_core.ipynb 6
+# %% ../nbs/01_core.ipynb 7
 def _exec(obj, **kwargs):
     if hasattr(obj, 'exec'):
         return obj.exec(**kwargs)
@@ -68,7 +68,7 @@ def delayed_func(func):
         return DelayedFunc(func, args, kwargs)
     return wrapper
 
-# %% ../nbs/01_core.ipynb 10
+# %% ../nbs/01_core.ipynb 11
 # class DelayedMethod:
 #     """Delay the execution of a method until exec is run."""
 
@@ -197,7 +197,7 @@ def patch_method(func=None, dialect='sql'):
     if func is None: return partial(patch_method, dialect=dialect)
     return patch_to(func, dialect)
 
-# %% ../nbs/01_core.ipynb 16
+# %% ../nbs/01_core.ipynb 17
 def _over(self, partition_by):
     return OverClause(self).over(partition_by)
 
