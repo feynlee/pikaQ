@@ -3,7 +3,8 @@
 # %% auto 0
 __all__ = ['CURRENT_ROW', 'quote_symbol', 'to_sql', 'exec', 'DelayedFunc', 'delayed_func', 'as_', 'DelayedPipeline', 'eval_type',
            'union2tuple', 'patch_to', 'patch_method', 'Field', 'ArithmeticExpression', 'Criteria', 'OverClause',
-           'Preceding', 'Following']
+           'Preceding', 'Following', 'Table', 'custom_func', 'CustomFunction', 'add_months', 'Case', 'Query',
+           'QueryBase', 'Joiner', 'Selector', 'SelectQuery', 'UnionQuery']
 
 # %% ../nbs/01_core.ipynb 1
 import inspect
@@ -36,19 +37,13 @@ def to_sql(l):
 
 
 def exec(obj, **kwargs):
+    """Call the exec method of `obj` if it exists, otherwise return the string representation of `obj`"""
     if hasattr(obj, 'exec'):
         return obj.exec(**kwargs)
     else:
         return str(obj)
 
 # %% ../nbs/01_core.ipynb 6
-def _exec(obj, **kwargs):
-    if hasattr(obj, 'exec'):
-        return obj.exec(**kwargs)
-    else:
-        return obj
-
-
 class DelayedFunc:
     """Delay the execution of stored function until exec is run."""
     def __init__(self, func, args, kwargs, order=None) -> None: 
@@ -58,7 +53,7 @@ class DelayedFunc:
         """keyword arguments can be overwritten with any provided new kwargs."""
         self.kwargs.update(kwargs)
         # recursively resolve all delayed functions
-        args = (_exec(arg, **self.kwargs) for arg in self.args) 
+        args = (exec(arg, **self.kwargs) for arg in self.args) 
         return self.func(*args, **self.kwargs)
 
 
@@ -69,40 +64,6 @@ def delayed_func(func):
     return wrapper
 
 # %% ../nbs/01_core.ipynb 10
-# class DelayedMethod:
-#     """Delay the execution of a method until exec is run."""
-
-#     def __init__(self,
-#                  method, 
-#                  _self,  # "self" for the Object the method belongs to
-#                  args, 
-#                  kwargs, 
-#                  order=None
-#                  ) -> None:
-#         store_attr()
-
-#     def exec(self, **kwargs):
-#         """keyword arguments can be overwritten with any provided new kwargs."""
-#         self.kwargs.update(kwargs)
-#         # recursively resolve all delayed functions
-#         args = (_exec(arg, **self.kwargs) for arg in self.args)
-#         return self.method(self._self, *args, **self.kwargs)
-
-
-# def delayed_method(func, order=None):
-#     """wrap func in DelayedFunc and append it to self.dp"""
-#     def wrapper(self, *args, **kwargs):
-#         self.dp.append(DelayedMethod(func, self, args, kwargs, order=order))
-#         return self
-#     return wrapper
-
-
-# def no_delay(self, func):
-#     def inner(*args, **kwargs):
-#         return func(self, *args, **kwargs)
-#     return inner
-
-
 def as_(self, alias):
     if self.res:
         self.alias = alias
@@ -129,7 +90,10 @@ class DelayedPipeline:
 
     def __getattr__(self, attr):
         def _func(*args, dialect='sql', **kwargs):
-            return self.dic[attr]['dialect'][dialect](self, *args, **kwargs)
+            try: 
+                return self.dic[attr]['dialect'][dialect](self, *args, **kwargs)
+            except:
+                raise KeyValueError(f"dialect {dialect} is not implemented for {attr}!")
 
         def wrapper(*args, **kwargs):
             dlf = DelayedFunc(_func, args, kwargs)
@@ -486,3 +450,298 @@ class Following:
 CURRENT_ROW = "CURRENT_ROW"
 
 
+
+# %% ../nbs/01_core.ipynb 21
+class Table:
+    def __init__(self, name) -> None:
+        store_attr()
+        self.alias = name
+        # self.name = self.alias = name
+
+    def as_(self, alias):
+        self.alias = alias
+        return self
+
+    def __getattr__(self, __name: str):
+        if __name.startswith('__'):
+            raise AttributeError
+            # return super().__getattr__(__name)
+        else:
+            return Field(f"{self.alias}.{__name}")
+    
+    def exec(self, **kwargs):
+        if self.alias != self.name:
+            return f"{self.name} as {self.alias}"
+        else:
+            return self.name
+
+# %% ../nbs/01_core.ipynb 24
+def _kwargs_func(func, *args, **kwargs):
+    "Allow arbitrary kwargs. Only pass those kwargs that are specified in func to func."
+    sig = inspect.signature(func)
+    param = sig.parameters
+    func_kwargs = {k:v for k, v in param.items() if v.default!=inspect._empty}
+    kwargs = {k:v for k, v in kwargs.items() if k in func_kwargs}
+    return func(*args, **kwargs)
+
+
+def custom_func(func=None, window_func=False, dialect=None):
+    """return Field"""
+    if func is None: 
+        return partial(custom_func, window_func=window_func, dialect=dialect)
+    else:
+        if dialect is None:
+            def wrapper(*args, **kwargs):
+                dlf = DelayedFunc(func, args, kwargs)
+                f = Field(window_func=window_func)
+                f.dp.append(dlf)
+                return f
+        else:
+            # get previously defined func
+            func_name = func.__name__
+            ori_func = globals().get(func_name)
+            def wrapper(*args, **kwargs):
+                def new_func(*args, **kwargs):
+                    if kwargs['dialect'] != dialect and ori_func:
+                        f = ori_func().dp[0].func
+                    else:
+                        f = func
+                    return _kwargs_func(f, *args, **kwargs)
+
+                # make new delayed function
+                dlf = DelayedFunc(new_func, args, kwargs)
+
+                # append the delayed function to Field.dp
+                f = Field(window_func=window_func)
+                f.dp.append(dlf)
+                return f
+        return wrapper
+
+
+class CustomFunction(Field):
+    def __init__(self, func_name, args) -> None:
+        super().__init__()
+        self.func_name = func_name
+        self.args = args
+    
+    def __call__(self, *args):
+        if len(args) != len(self.args):
+            raise ValueError(f"The number of args provided {len(args)} is not the same as the number of args expected by this function ({len(self.args)})!")
+        def func(*args):
+            return f"{self.func_name}({', '.join(args)})"
+
+        dlf = DelayedFunc(func, args, {})
+        self.dp.append(dlf)
+        return self
+
+
+@custom_func
+def add_months(column, num, dialect='sql'):
+    if dialect=='sql':
+        return f'DATE_ADD(month, {num}, {column})'
+    elif dialect=='snowflake':
+        return f'MONTH_ADD({column}, {num})'
+
+# %% ../nbs/01_core.ipynb 31
+class Case:
+    def __init__(self) -> None:
+        self.dp = []
+        self.alias = None
+
+    def check_prev(self, statement):
+        if self.dp:
+            prev = self.dp[0][0]
+            if prev == statement:
+                return True
+        return False
+
+    def when(self, q, then):
+        if self.check_prev('ELSE'):
+            raise ValueError(f"'WHEN' can not follow 'ELSE'!")
+        self.dp.append(('WHEN', q, then))
+        return self
+
+    def else_(self, q):
+        self.dp.append(('ELSE', q))
+        return self
+
+    def _as(self, alias):
+        self.alias = alias
+        return self
+
+    def exec(self, **kwargs):
+        sql = ["CASE"]
+        for item in self.dp:
+            if item[0] == 'WHEN':
+                q_resolved = f"WHEN {exec(item[1], **kwargs)} THEN {exec(item[2], **kwargs)}"
+            else:
+                q_resolved = f"ELSE {exec(item[1], **kwargs)}"
+            sql.append(q_resolved)
+        if self.alias:
+            sql.append(f"END AS {self.alias}")
+        else:
+            sql.append("END")
+        return '\n'.join(sql)
+
+
+# %% ../nbs/01_core.ipynb 34
+class Query:
+    @classmethod
+    def from_(cls, query):
+        q = SelectQuery()
+        q.dic['from'] = query
+        return q
+
+    @classmethod
+    def with_(cls, query, alias):
+        q = SelectQuery()
+        q.dic['with'] = [(query, alias)]
+        return q
+
+
+class QueryBase:
+    pass
+
+
+class Joiner(QueryBase):
+    def __init__(self, select_query, query, how=None) -> None:
+        store_attr()
+
+    def on(self, condition):
+        l = self.select_query.dic.get('join', [])
+        l.append((self.query, self.how, condition))
+        self.select_query.dic['join'] = l
+        return self.select_query
+
+
+class Selector(QueryBase):
+    def __init__(self, select_query, *args) -> None:
+        self.select_query = select_query
+        self.select_query.dic['select'] = list(args)
+
+    def __getattr__(self, __name: str):
+        return getattr(self.select_query, __name)
+
+    def distinct(self):
+        self.select_query.dic['distinct'] = True
+        return self.select_query
+
+
+class SelectQuery(QueryBase):
+    keys_simple = ['from', 'group by', 'order by', 'where', 'having', 'limit']
+    keys_parse = ['with', 'from', 'join', 'on', 'where', 'group by', 'having', 'order by', 'select', 'limit']
+    keys_sql = ['with', 'select', 'from', 'join', 'on', 'where', 'group by', 'having', 'order by', 'limit']
+    key_translate = {
+        'groupby': 'group by',
+        'orderby': 'order by'
+    }
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.dic = {}
+
+    def join(self, query, how=None):
+        q = Joiner(self, query, how)
+        return q
+
+    def select(self, *args):
+        return Selector(self, *args)
+
+    @staticmethod
+    def _resolve(q, **kwargs):
+        if getattr(q, 'exec', None):
+            return q.exec(**kwargs)
+        else:
+            return str(q)
+
+    def __getattr__(self, __name):
+        __name = __name.strip('_')
+
+        if __name.startswith('exec'):
+            # for exec_{key} methods
+            key = __name.split('_')[-1]
+
+            def inner(**kwargs):
+                if key in self.keys_simple:
+                    q = self.dic[key]
+                    if isinstance(q, QueryBase):
+                        return f"{self.key_translate.get(key, key)} ({self._resolve(q, **kwargs)})"
+                    else:
+                        return f"{self.key_translate.get(key, key)} {self._resolve(q, **kwargs)}"
+                elif key == 'with':
+                    s = self.dic[key]
+                    qq = [f"{a} as ({self._resolve(q, **kwargs)})" for q, a in s]
+                    return f"{key} " + ",\n".join(qq)
+                elif key == 'join':
+                    l = self.dic[key]
+                    parsed = []
+                    for q, how, cond in l:
+                        if how:
+                            how = how + ' '
+                        else:
+                            how = ''
+                        if isinstance(q, QueryBase):
+                            sub_q = f"({self._resolve(q, **kwargs)})"
+                        else:
+                            sub_q = self._resolve(q, **kwargs)
+                        parsed.append(f"{how}join {sub_q} on {self._resolve(cond, **kwargs)}")
+                    return '\n'.join(parsed)
+                elif key == 'select':
+                    args = self.dic[key]
+                    columns = [self._resolve(arg, **kwargs) for arg in args]
+                    if self.dic.get('distinct'):
+                        return f"{key} distinct " + ', '.join(columns)
+                    else:
+                        return f"{key} " + ', '.join(columns)
+                else:
+                    raise AttributeError(f"{__name} is not a valid attribute!")
+        elif __name in self.keys_simple:
+            def inner(query):
+                self.dic[__name] = query
+                return self
+        elif __name in ['with']:
+            def inner(query, alias):
+                l = self.dic.get('with', [])
+                l.append((query, alias))
+                self.dic['with'] = l
+                return self
+        else:
+            raise AttributeError(f"{__name} is not a valid attribute!")
+
+        return inner
+
+
+    def exec(self, **kwargs):
+        dic_sql = {}
+
+        for key in self.keys_parse:
+            if key in self.dic:
+                dic_sql[key] = getattr(self, f'exec_{key}')(**kwargs)
+
+        sql = '\n'.join([dic_sql[key] for key in self.keys_sql if key in dic_sql])
+        return sql
+    
+    def union(self, query):
+        if not isinstance(query, QueryBase):
+            raise TypeError(f"{query} is not an instance of QueryBase!")
+        return UnionQuery(self, query, union_type='UNION')
+
+    def __add__(self, query):
+        return self.union(query)
+
+    def union_all(self, query):
+        if not isinstance(query, QueryBase):
+            raise TypeError(f"{query} is not an instance of QueryBase!")
+        return UnionQuery(self, query, union_type='UNION ALL')
+
+    def __mul__(self, query):
+        return self.union_all(query)
+
+
+class UnionQuery:
+    def __init__(self, q1, q2, union_type='UNION') -> None:
+        store_attr()
+
+    def exec(self, **kwargs):
+        return f"{exec(self.q1, **kwargs)} {self.union_type} {exec(self.q2, **kwargs)}"
+    
