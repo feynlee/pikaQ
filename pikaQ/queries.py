@@ -4,6 +4,7 @@
 __all__ = ['Table', 'Query', 'QueryBase', 'Joiner', 'Selector', 'SelectQuery', 'UnionQuery']
 
 # %% ../nbs/03_queries.ipynb 2
+from .utils import exec
 from .terms import Field
 
 # %% ../nbs/03_queries.ipynb 4
@@ -49,6 +50,7 @@ class QueryBase:
 
 
 class Joiner(QueryBase):
+    """Join clause has to be followed by an on clause"""
     def __init__(self, select_query, query, how=None) -> None:
         self.select_query = select_query
         self.query = query
@@ -62,11 +64,14 @@ class Joiner(QueryBase):
 
 
 class Selector(QueryBase):
+    """Select clause could be followed by a distinct clause"""
     def __init__(self, select_query, *args) -> None:
         self.select_query = select_query
         self.select_query.dic['select'] = list(args)
 
     def __getattr__(self, __name: str):
+        # selector inherits all methods from the SelectQuery object
+        # so that the distinct method is optional
         return getattr(self.select_query, __name)
 
     def distinct(self):
@@ -75,78 +80,69 @@ class Selector(QueryBase):
 
 
 class SelectQuery(QueryBase):
-    keys_simple = ['from', 'group by', 'order by', 'where', 'having', 'limit']
-    keys_parse = ['with', 'from', 'join', 'on', 'where', 'group by', 'having', 'order by', 'select', 'limit']
-    keys_sql = ['with', 'select', 'from', 'join', 'on', 'where', 'group by', 'having', 'order by', 'limit']
-    key_translate = {
+    keys_simple = ['from', 'groupby', 'orderby', 'where', 'having', 'limit']
+    # the order to parse different parts of the sql query
+    keys_parse = ['with', 'from', 'join', 'where', 'groupby', 'having', 'orderby', 'select', 'limit']
+    # the order to put together the final sql query
+    keys_sql = ['with', 'select', 'from', 'join', 'where', 'groupby', 'having', 'orderby', 'limit']
+    key_translation = {
         'groupby': 'group by',
         'orderby': 'order by'
     }
 
     def __init__(self) -> None:
-        super().__init__()
         self.dic = {}
 
     def join(self, query, how=None):
-        q = Joiner(self, query, how)
-        return q
+        return Joiner(self, query, how)
 
     def select(self, *args):
         return Selector(self, *args)
 
-    @staticmethod
-    def _resolve(q, **kwargs):
-        if getattr(q, 'exec', None):
-            return q.exec(**kwargs)
+    def parse(self, key, **kwargs):
+        if key in self.keys_simple:
+            q = self.dic[key]
+            if isinstance(q, QueryBase):
+                return f"{self.key_translation.get(key, key)} ({exec(q, **kwargs)})"
+            else:
+                return f"{self.key_translation.get(key, key)} {exec(q, **kwargs)}"
+        elif key == 'with':
+            s = self.dic[key]
+            qq = [f"{a} as ({exec(q, **kwargs)})" for q, a in s]
+            return f"{key} " + ",\n".join(qq)
+        elif key == 'join':
+            l = self.dic[key]
+            parsed = []
+            for q, how, cond in l:
+                if how:
+                    how = how + ' '
+                else:
+                    how = ''
+                if isinstance(q, QueryBase):
+                    sub_q = f"({exec(q, **kwargs)})"
+                else:
+                    sub_q = exec(q, **kwargs)
+                parsed.append(f"{how}join {sub_q} on {exec(cond, **kwargs)}")
+            return '\n'.join(parsed)
+        elif key == 'select':
+            args = self.dic[key]
+            columns = [exec(arg, **kwargs) for arg in args]
+            if self.dic.get('distinct'):
+                return f"{key} distinct " + ', '.join(columns)
+            else:
+                return f"{key} " + ', '.join(columns)
         else:
-            return str(q)
+            raise AttributeError(f"{key} is not a valid attribute!")
 
     def __getattr__(self, __name):
-        __name = __name.strip('_')
+        # Construct the corresponding method functions
+        __name = __name.split('_')[0].lower()
 
-        if __name.startswith('exec'):
-            # for exec_{key} methods
-            key = __name.split('_')[-1]
-
-            def inner(**kwargs):
-                if key in self.keys_simple:
-                    q = self.dic[key]
-                    if isinstance(q, QueryBase):
-                        return f"{self.key_translate.get(key, key)} ({self._resolve(q, **kwargs)})"
-                    else:
-                        return f"{self.key_translate.get(key, key)} {self._resolve(q, **kwargs)}"
-                elif key == 'with':
-                    s = self.dic[key]
-                    qq = [f"{a} as ({self._resolve(q, **kwargs)})" for q, a in s]
-                    return f"{key} " + ",\n".join(qq)
-                elif key == 'join':
-                    l = self.dic[key]
-                    parsed = []
-                    for q, how, cond in l:
-                        if how:
-                            how = how + ' '
-                        else:
-                            how = ''
-                        if isinstance(q, QueryBase):
-                            sub_q = f"({self._resolve(q, **kwargs)})"
-                        else:
-                            sub_q = self._resolve(q, **kwargs)
-                        parsed.append(f"{how}join {sub_q} on {self._resolve(cond, **kwargs)}")
-                    return '\n'.join(parsed)
-                elif key == 'select':
-                    args = self.dic[key]
-                    columns = [self._resolve(arg, **kwargs) for arg in args]
-                    if self.dic.get('distinct'):
-                        return f"{key} distinct " + ', '.join(columns)
-                    else:
-                        return f"{key} " + ', '.join(columns)
-                else:
-                    raise AttributeError(f"{__name} is not a valid attribute!")
-        elif __name in self.keys_simple:
+        if __name in self.keys_simple:
             def inner(query):
                 self.dic[__name] = query
                 return self
-        elif __name in ['with']:
+        elif __name == 'with':
             def inner(query, alias):
                 l = self.dic.get('with', [])
                 l.append((query, alias))
@@ -157,13 +153,12 @@ class SelectQuery(QueryBase):
 
         return inner
 
-
     def exec(self, **kwargs):
         dic_sql = {}
 
         for key in self.keys_parse:
             if key in self.dic:
-                dic_sql[key] = getattr(self, f'exec_{key}')(**kwargs)
+                dic_sql[key] = self.parse(key, **kwargs)
 
         sql = '\n'.join([dic_sql[key] for key in self.keys_sql if key in dic_sql])
         return sql
