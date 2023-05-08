@@ -23,12 +23,19 @@ class Table:
         else:
             # if an alias is assigned, always use it as the table name when accessing a field
             return Field(f"{self.alias}.{__name}")
+
+    def quoted_name(self, quote_char):
+        name_list = self.name.split('.')
+        name = '.'.join([f"{quote_char}{n}{quote_char}" for n in name_list])
+        return name
     
     def execute(self, **kwargs):
+        q = kwargs.get('quote_char', '') or ''
+        quoted_name = self.quoted_name(q)
         if self.alias != self.name:
-            return f"{self.name} as {self.alias}"
+            return f"{quoted_name} as {q}{self.alias}{q}"
         else:
-            return self.name
+            return quoted_name
 
 # %% ../nbs/04_queries.ipynb 7
 class Query:
