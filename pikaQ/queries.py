@@ -201,7 +201,7 @@ class UnionQuery:
 # %% ../nbs/04_queries.ipynb 9
 class Exists:
     """Exists statement"""
-    def __init__(self, query) -> None:
+    def __init__(self, query:Query) -> None:
         super().__init__()
         self.query = query
         self.get_sql = self.execute

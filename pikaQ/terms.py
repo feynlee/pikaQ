@@ -331,13 +331,13 @@ def custom_func(func=None, window_func=False, dialect=None):
 # %% ../nbs/02_terms.ipynb 16
 class OverClause:
     def __init__(self, expression) -> None:
-        if not (isinstance(expression, ArithmeticExpression) 
-                or 
-                (isinstance(expression, DelayedFunc) 
-                 and 
-                 expression.window_func==True
-                )
-                or type(expression) is str):
+        if not (
+            (hasattr(expression, 'window_func')
+             and 
+             expression.window_func==True)
+            or 
+            (type(expression) is str)
+        ):
             raise ValueError(f"Expression has to be of the ArithmeticExpression type or a Window Function (DelayedFunc with window_func=True)!!")
         self.expr = expression
         self.alias = None
