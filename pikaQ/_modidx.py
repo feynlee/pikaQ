@@ -141,6 +141,7 @@ d = { 'settings': { 'branch': 'master',
                              'pikaQ.terms.Value.execute': ('terms.html#value.execute', 'pikaQ/terms.py'),
                              'pikaQ.terms.custom_func': ('terms.html#custom_func', 'pikaQ/terms.py'),
                              'pikaQ.terms.kwargs_func': ('terms.html#kwargs_func', 'pikaQ/terms.py')},
-            'pikaQ.utils': { 'pikaQ.utils.execute': ('utils.html#execute', 'pikaQ/utils.py'),
+            'pikaQ.utils': { 'pikaQ.utils.delegates': ('utils.html#delegates', 'pikaQ/utils.py'),
+                             'pikaQ.utils.execute': ('utils.html#execute', 'pikaQ/utils.py'),
                              'pikaQ.utils.quote_symbol': ('utils.html#quote_symbol', 'pikaQ/utils.py'),
                              'pikaQ.utils.to_sql': ('utils.html#to_sql', 'pikaQ/utils.py')}}}

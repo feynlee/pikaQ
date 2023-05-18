@@ -8,7 +8,7 @@ __all__ = ['CURRENT_ROW', 'Term', 'Value', 'NullValue', 'FieldBase', 'Field', 'A
 import inspect
 from functools import partial
 from fastcore.foundation import patch
-from .utils import execute
+from .utils import execute, delegates
 
 # %% ../nbs/02_terms.ipynb 4
 class Term:
@@ -307,6 +307,7 @@ def custom_func(func=None, window_func=False, dialect=None):
         return partial(custom_func, window_func=window_func, dialect=dialect)
     else:
         if dialect is None:
+            @delegates(func)
             def wrapper(*args, **kwargs):
                 dlf = DelayedFunc(func, args, kwargs, window_func=window_func)
                 return dlf
@@ -314,6 +315,7 @@ def custom_func(func=None, window_func=False, dialect=None):
             # get previously defined func
             func_name = func.__name__
             ori_func = globals().get(func_name)
+            @delegates(func)
             def wrapper(*args, **kwargs):
                 def new_func(*args, **kwargs):
                     # if the dialect is different from the one defined for this new function, fall back to the original func

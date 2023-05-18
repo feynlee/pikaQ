@@ -7,19 +7,21 @@ __all__ = ['Max', 'Min', 'Sum', 'Avg', 'Count', 'Abs', 'Round', 'First', 'Last',
            'DateTrunc']
 
 # %% ../nbs/03_functions.ipynb 2
-from fastcore.all import patch
+from fastcore.all import patch, delegates
 from .utils import execute
 from .terms import FieldBase, Field, custom_func, OverClause
 
 # %% ../nbs/03_functions.ipynb 4
 class CustomFunction(FieldBase):
     """A convenient class for creating custom functions."""
+
     def __init__(self, 
                  func_name: str,    # name of the function 
                  arg_names: list,   # list of arg names
                  window_func=False,  # whether this can be used as a window function
                  distinct_option=False # whether this function can be used with the distinct option
         ) -> None:
+        import inspect
         super().__init__()
         self.func_name = func_name
         self.arg_names = arg_names
@@ -27,7 +29,10 @@ class CustomFunction(FieldBase):
         self.distinct_option = distinct_option
         self.distinct_ = False  # whether the distinct option is used
         self.get_sql = self.execute
-    
+        self.__qualname__ = func_name
+        self.__signature__ = inspect.Signature(parameters=[inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in arg_names]) 
+        self.__doc__ = f"Custom function {func_name} with args {arg_names}"
+
     def __call__(self, *args):
         if len(args) != len(self.arg_names):
             raise ValueError(f"The number of args provided {len(args)} is not the same as the number of args expected by this function ({len(self.arg_names)})!")
@@ -60,7 +65,7 @@ def over(self:CustomFunction, partition_by):
     else:
         raise ValueError(f"This function is not a window function!!")
 
-# %% ../nbs/03_functions.ipynb 10
+# %% ../nbs/03_functions.ipynb 11
 Max = CustomFunction('MAX', ['field'], window_func=True, distinct_option=True)
 Min = CustomFunction('MIN', ['field'], window_func=True, distinct_option=True)
 Sum = CustomFunction('SUM', ['field'], window_func=True, distinct_option=True)
