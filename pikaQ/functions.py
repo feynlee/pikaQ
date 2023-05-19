@@ -31,7 +31,7 @@ class CustomFunction(FieldBase):
         self.get_sql = self.execute
         self.__qualname__ = func_name
         self.__signature__ = inspect.Signature(parameters=[inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD) for name in arg_names]) 
-        self.__doc__ = f"Custom function {func_name} with args {arg_names}"
+        self.__doc__ = None
 
     def __call__(self, *args):
         if len(args) != len(self.arg_names):
@@ -76,6 +76,7 @@ Round = CustomFunction('ROUND', ['field', 'decimals'])
 First = CustomFunction('FIRST', ['field'])
 Last = CustomFunction('LAST', ['field'])
 
+# %% ../nbs/03_functions.ipynb 21
 @custom_func
 def Cast(field, type):
     return f"CAST({field} AS {type})"
@@ -134,6 +135,8 @@ def DateTrunc(interval, date, dialect='sql'):
     else:
         return f"DATE_TRUNC('{interval}', {date})"
 
+
+# %% ../nbs/03_functions.ipynb 22
 MonthsBetween = CustomFunction('MONTHS_BETWEEN', ['start_date', 'end_date'])
 
 # Window Functions
