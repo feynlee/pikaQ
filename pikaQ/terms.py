@@ -46,7 +46,7 @@ class NullValue(Term):
         return f"NULL as {self.alias}" if self.alias else f"NULL"
 
 # %% ../nbs/02_terms.ipynb 7
-class FieldBase:
+class FieldBase(Term):
     """Collection of methods to convert to ArithmeticExpression and Criteria"""
     def __add__(self, other):
         return ArithmeticExpression(self, '+', other)
@@ -130,10 +130,6 @@ class Field(FieldBase):
         self.alias = None
         self.get_sql = self.execute
 
-    def as_(self, alias):
-        self.alias = alias
-        return self
-
     def quoted_name(self, quote_char):
         name_list = self.name.split('.')
         name = '.'.join([f"{quote_char}{n}{quote_char}" for n in name_list])
@@ -156,10 +152,6 @@ class ArithmeticExpression(FieldBase):
         self.this, self.op, self.other = this, op, other
         self.alias = None
         self.get_sql = self.execute
-
-    def as_(self, alias):
-        self.alias = alias
-        return self
 
     def left_needs_parens(self, left_op, curr_op) -> bool:
         """
@@ -438,7 +430,7 @@ def over(self:DelayedFunc, partition_by):
 
 
 # %% ../nbs/02_terms.ipynb 20
-class Case:
+class Case(Term):
     def __init__(self) -> None:
         self.dp = []
         self.alias = None
@@ -459,10 +451,6 @@ class Case:
 
     def else_(self, q):
         self.dp.append(('ELSE', q))
-        return self
-
-    def _as(self, alias):
-        self.alias = alias
         return self
 
     def execute(self, **kwargs):
