@@ -279,18 +279,24 @@ class DelayedFunc(FieldBase):
                  kwargs, 
                  window_func=True # whether this function is a window function
                  ) -> None: 
+        super().__init__()
         self.func = func
         self.args = args
         self.kwargs = kwargs
         self.window_func = window_func
         self.get_sql = self.execute
+    
 
     def execute(self, **kwargs):
         """keyword arguments can be overwritten with any provided new kwargs."""
         self.kwargs.update(kwargs)
         # recursively resolve all delayed functions
         args = (execute(arg, **self.kwargs) for arg in self.args) 
-        return self.func(*args, **self.kwargs)
+        func = self.func(*args, **self.kwargs)
+        if self.alias:
+            return f"{func} AS {self.alias}"
+        else:
+            return func
 
 
 def custom_func(func=None, window_func=False, dialect=None):
