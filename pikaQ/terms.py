@@ -21,6 +21,7 @@ class Term:
 
 
 class Value(Term):
+    """A simple wrapper for a value that will be used in a query."""
     def __init__(self, value) -> None:
         super().__init__()
         self.value = value
@@ -38,6 +39,7 @@ class Value(Term):
 
 
 class NullValue(Term):
+    """NULL value for use in queries."""
     def __init__(self) -> None:
         super().__init__()
         self.get_sql = self.execute
@@ -125,6 +127,7 @@ class FieldBase(Term):
 
 
 class Field(FieldBase):
+    """A simple wrapper for a field that will be used in a query. Quotes can be added to the field name by setting the `quote_char` parameter in get_sql() method."""
     def __init__(self, name) -> None: 
         self.name = name
         self.alias = None
@@ -145,6 +148,7 @@ class Field(FieldBase):
     
 
 class ArithmeticExpression(FieldBase):
+    """Constructor for arithmetic expressions from two terms and automatically adds parentheses in appropriate places."""
     add_order = ["+", "-"]
 
     def __init__(self, this, op, other) -> None:
@@ -215,6 +219,7 @@ class ArithmeticExpression(FieldBase):
 
 
 class Criteria:
+    """Constructor for criteria from two terms and automatically adds parentheses in appropriate places."""
     compose_ops = ('and', 'or')
 
     def __init__(self, this, op, other) -> None:
@@ -330,6 +335,7 @@ def custom_func(func=None, window_func=False, dialect=None):
 
 # %% ../nbs/02_terms.ipynb 16
 class OverClause:
+    """Constructor for OVER clause."""
     def __init__(self, expression) -> None:
         if not (
             (hasattr(expression, 'window_func')
@@ -437,6 +443,7 @@ def over(self:DelayedFunc, partition_by):
 
 # %% ../nbs/02_terms.ipynb 20
 class Case(Term):
+    """Constructor for CASE statement."""
     def __init__(self) -> None:
         self.dp = []
         self.alias = None

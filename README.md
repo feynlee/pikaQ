@@ -30,9 +30,10 @@ pip install pikaQ
 
 ## How to use
 
-For example, if we want to write the same query in SparkSQL and AWS
+For example, if we want to write the same query in Spark SQL and AWS
 Athena, we might encounter this problem: we have `ADD_MONTHS` function
-in SparkSQL, but in AWS Athena
+in [Spark SQL](https://spark.apache.org/docs/2.3.0/api/sql/#add_months),
+but in AWS Athena
 ([Presto](https://prestodb.io/docs/current/functions/datetime.html#interval-functions))
 we don’t have this function.
 
@@ -58,7 +59,7 @@ q = (Query.from_('table')
 )
 ```
 
-Then we can generate the query for SparkSQL and AWS Athena:
+Then we can generate the query for Spark SQL and AWS Athena:
 
 ``` python
 print(q.get_sql(dialect='athena'))

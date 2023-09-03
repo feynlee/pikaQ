@@ -10,6 +10,7 @@ import pikaQ.functions as fn
 
 # %% ../nbs/04_queries.ipynb 4
 class Table:
+    """A class with star and as_ methods to be used as a Table/AliasesQuery in a query. Any other attribute will be treated as a field."""
     def __init__(self, name) -> None:
         self.name = self.alias = name
         self.get_sql = self.execute
@@ -94,6 +95,7 @@ class Selector(QueryBase):
 
 
 class SelectQuery(QueryBase):
+    """The class to construct a select query. It returns a `Joiner` object when called with the method join. It returns a `Selector` object when called with the method select."""
     keys_simple = ['from', 'groupby', 'orderby', 'where', 'having', 'limit']
     # the order to put together the final sql query
     sql_keys = ['with', 'select', 'from', 'join', 'where', 'groupby', 'having', 'orderby', 'limit']
@@ -204,6 +206,7 @@ class SelectQuery(QueryBase):
 
 
 class UnionQuery(QueryBase):
+    """The class to construct a union query."""
     def __init__(self, q1, q2, union_type='UNION') -> None:
         self.q1 = q1
         self.q2 = q2
