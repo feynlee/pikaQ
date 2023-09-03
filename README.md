@@ -153,7 +153,8 @@ print(q.get_sql())
     from v
     join m on v.col1 = m.col1 and v.col2 = m.col2
 
-For more syntax examples, please refer to the docs.
+For more syntax examples, please refer to the
+[docs](https://feynlee.github.io/pikaQ/).
 
 ## Extension
 
