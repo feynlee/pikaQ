@@ -162,6 +162,6 @@ One can use the core components and logic implemented in this library to
 extend the functionality to support more SQL syntax and other types of
 queries. For details of how to extend the
 [`SelectQuery`](https://feynlee.github.io/pikaQ/queries.html#selectquery)
-to support more clauses, please refer to the
-[`Query`](https://feynlee.github.io/pikaQ/queries.html#query) section of
-the docs.
+to support more clauses, please refer to the [Extending Query
+section](https://feynlee.github.io/pikaQ/queries.html#extending-query)
+of the docs.

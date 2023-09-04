@@ -154,3 +154,4 @@ checklink/cookies.txt
 __pypackages__/
 pdm.lock
 pyproject.toml
+_proc/*
