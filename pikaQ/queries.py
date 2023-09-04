@@ -29,6 +29,9 @@ class Table:
             # if an alias is assigned, always use it as the table name when accessing a field
             return Field(f"{self.alias}.{__name}")
 
+    def field(self, name):
+        return Field(f"{self.alias}.{name}")
+
     def quoted_name(self, quote_char):
         name_list = self.name.split('.')
         name = '.'.join([f"{quote_char}{n}{quote_char}" for n in name_list])
