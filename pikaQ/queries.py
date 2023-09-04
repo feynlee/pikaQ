@@ -8,7 +8,7 @@ from .utils import execute
 from .terms import Field
 import pikaQ.functions as fn
 
-# %% ../nbs/04_queries.ipynb 4
+# %% ../nbs/04_queries.ipynb 3
 class Table:
     """A class with star and as_ methods to be used as a Table/AliasesQuery in a query. Any other attribute will be treated as a field."""
     def __init__(self, name) -> None:
@@ -48,7 +48,7 @@ class Table:
 
 AliasedQuery = Table
 
-# %% ../nbs/04_queries.ipynb 7
+# %% ../nbs/04_queries.ipynb 5
 class QueryBase:
     """An empty query class to be inherited by all query classes. A convenient tool to make all query objects belong to this same class."""
     pass
@@ -235,7 +235,7 @@ class Query(QueryBase):
         q.dic['with'] = [(query, alias)]
         return q
 
-# %% ../nbs/04_queries.ipynb 13
+# %% ../nbs/04_queries.ipynb 7
 class Exists:
     """Exists statement"""
     def __init__(self, query:Query) -> None:
