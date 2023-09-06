@@ -6,13 +6,13 @@ This library is heavily inspired by
 [PyPika](https://github.com/kayak/pypika), so a lot of the syntax is
 based on how PyPika works. Just like PyPika, PikaQ replaces handwritten
 SQL queries with programmatic construction of queries. The main
-difference is that pikaQ is designed solve the problem of writing the
-same code that can be parsed to different SQL dialects. This is done by
-using a common syntax that is then translated to the specific dialect.
+difference is that pikaQ is designed to generate different SQL dialects
+from the same code. This is done by using a common syntax that is then
+translated to the specific dialect.
 
 This library provides the core components and implementation for
-constructing the `Select` query and the core mechanism for parsing it
-into different dialect. It does not offer complete coverage of SQL
+constructing the `Select` query and the core mechanism for translating
+it into different dialect. It does not offer complete coverage of SQL
 syntax nor the detailed implementation of all the dialects. However, it
 should be easy to extend the library to support more SQL syntax and
 other types of queries you want to construct.
