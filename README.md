@@ -28,16 +28,24 @@ were writing SQL yourself.
 pip install pikaQ
 ```
 
-## How to use
+## Delayed Translation
+
+The translation of the query is delayed until the `get_sql` method is
+called. All the components of the query have an
+[`execute`](https://feynlee.github.io/pikaQ/utils.html#execute) method
+that returns the SQL string for that component, and when `get_sql` is
+called, the
+[`execute`](https://feynlee.github.io/pikaQ/utils.html#execute) method
+of all the components are called recursively to generate the final SQL
+string.
 
 For example, if we want to write the same query in Spark SQL and AWS
 Athena, we might encounter this problem: we have `ADD_MONTHS` function
 in [Spark SQL](https://spark.apache.org/docs/2.3.0/api/sql/#add_months),
 but in AWS Athena
 ([Presto](https://prestodb.io/docs/current/functions/datetime.html#interval-functions))
-we don’t have this function.
-
-We can define an `ADD_MONTHS` function in the following way:
+we don’t have this function. We can define an `ADD_MONTHS` function in
+the following way:
 
 ``` python
 from pikaQ.terms import custom_func
@@ -74,6 +82,8 @@ print(q.get_sql(dialect='spark'))
 
     select col1, ADD_MONTH(col2, 3) AS col2
     from table
+
+## Select Query
 
 A more complex example to show how the syntax works:
 
