@@ -18,6 +18,9 @@ website:
       - icon: github
         href: https://github.com/feynlee/pikaQ
         aria-label: GitHub
+      - icon: twitter
+        href: https://twitter.com/curiosity_notes
+        aria-label: X
   sidebar:
     style: floating
 
